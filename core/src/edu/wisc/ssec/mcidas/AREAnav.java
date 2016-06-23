@@ -26,6 +26,9 @@ MA 02111-1307, USA
 
 package edu.wisc.ssec.mcidas;
 
+import static java.lang.Math.*;
+import static java.lang.Math.atan2;
+
 /**
  * The AREAnav is the superclass for AREA file navigation modules.
  * When used with AreaFile class, set up like this:
@@ -745,4 +748,78 @@ public abstract class AREAnav
     }
     return val;
   }
+
+
+    /**
+     * Convert given latitude between geocentric or geodetic.
+     *
+     * @param xlat Latitude in radians.
+     * @param idir If {@code 1}, conversion is geodedic to geocentric.
+     *             If {@code 2}, conversion is geocentric to geodedic.
+     *
+     * @return Converted latitude.
+     */
+    public static double geolat(double xlat, int idir) {
+        double a = 6378.137;
+        double b = 6356.752314;
+
+        double asq = pow(a, 2);
+        double bsq = pow(b, 2);
+
+        double cx = cos(xlat);
+        double sx = sin(xlat);
+        double geolat;
+        if (idir == 2) {
+            geolat = atan2(asq * sx, bsq * cx);
+        } else {
+            geolat = atan2(bsq * sx, asq * cx);
+        }
+        return geolat;
+    }
+
+    /**
+     * Dummy value for
+     * {@link #angles(int, int, double, double, double, double)} to return
+     * for navigations that don't support angle calculation.
+     */
+    public static final double[] BAD_ANGLES =
+        { Double.NaN, Double.NaN, Double.NaN };
+
+    /**
+     * Determine whether or not this type of navigation supports angle
+     * calculation.
+     *
+     * @return {@code true} if angle calculation is supported, {@code false}
+     *         otherwise.
+     *
+     * @see #angles(int, int, double, double, double, double)
+     */
+    public boolean canCalculateAngles() {
+        return false;
+    }
+
+    /**
+     * Computes zenith angles of sun and satellite and relative azimuth angle.
+     *
+     * @param jday Picture day (YYDDD).
+     * @param jtime Picture start time.
+     * @param xlat Latitude of point.
+     * @param xlon Longitude of point.
+     * @param gha Greenwich hour angle of sun.
+     * @param dec Declination of sun.
+     *
+     * @return Array of doubles containing zenith angle of satellite,
+     *         zenith angle of sun, and relative angle.
+     *
+     * @see #canCalculateAngles()
+     */
+    public double[] angles(final int jday,
+                           final int jtime,
+                           final double xlat,
+                           final double xlon,
+                           final double gha,
+                           final double dec)
+    {
+        return BAD_ANGLES;
+    }
 }
