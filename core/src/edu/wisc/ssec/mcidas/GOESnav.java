@@ -26,6 +26,18 @@ MA 02111-1307, USA
 
 package edu.wisc.ssec.mcidas;
 
+import static java.lang.Math.PI;
+import static java.lang.Math.abs;
+import static java.lang.Math.acos;
+import static java.lang.Math.asin;
+import static java.lang.Math.atan;
+import static java.lang.Math.atan2;
+import static java.lang.Math.cos;
+import static java.lang.Math.pow;
+import static java.lang.Math.sin;
+import static java.lang.Math.sqrt;
+import static java.lang.Math.tan;
+
 /**
  * Navigation class for GOES (GOES D-H) type nav. This code was modified
  * from the original FORTRAN code (nvxgoes.dlm) on the McIDAS system. It
@@ -83,7 +95,7 @@ public final class GOESnav extends AREAnav
     private double ab;
     private double asq;
     private double bsq;
-    private double r;
+//    private double r;
     private double rsq;
     private double rdpdg;
     private int numsen;
@@ -219,7 +231,7 @@ public final class GOESnav extends AREAnav
         ab = 40546851.22;
         asq = 40683833.48;
         bsq = 40410330.18;
-        r = 6371.221;
+//        r = 6371.221;
         rsq = r*r;
         rdpdg = 1.745329252E-02;
         numsen = (lintot/100000)%100;
@@ -1094,4 +1106,210 @@ C VECTOR EARTH-CENTER-TO-SAT (FUNC OF TIME)
 
         return new double[] {ssp_lat, ssp_lon};
       }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public boolean canCalculateAngles() {
+        return true;
+    }
+
+    public static int iday = 0;
+    public static final double r = 6371.221;
+
+    private int inorb = 0;
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public double[] angles (final int jday,
+                               final int jtime,
+                               final double xlat,
+                               final double xlon,
+                               final double gha,
+                               final double dec)
+    {
+//        intW inorb = new intW(0);
+
+        rdpdg = PI / 180.0;
+
+//        if ((iday == jday)) {
+//            Dummy.go_to("nvxgoes/Angles",1);
+//        }
+        iday = jday;
+//        inorb.val = 0;
+        inorb = 0;
+//        label1:
+//        Dummy.label("nvxgoes/Angles",1);
+        pictim = McIDASUtil.mcPackedIntegerToDouble(jtime);
+
+        // determine satellite position
+        double[] xyz = satpos(jtime);
+        final double xsat = xyz[0];
+        final double ysat = xyz[1];
+        final double zsat = xyz[2];
+
+        final double height = sqrt(pow(xsat, 2) + pow(ysat, 2) + pow(zsat, 2));
+        final double ylat = geolat(rdpdg * xlat, 1);
+        final double ylon = rdpdg * xlon;
+        final double slat = sin(ylat);
+        final double clat = cos(ylat);
+        final double slon = sin(ylon);
+        final double clon = cos(ylon);
+        final double xsam = r * clat * clon;
+        final double ysam = r * clat * slon;
+        final double zsam = r * slat;
+
+        // determine zenith angle of sun
+        final double snlg = -(pictim * PI / 12.0) - rdpdg * gha;
+        final double sndc = rdpdg * dec;
+        final double cosdec = cos(sndc);
+        final double vs = sin(snlg) * cosdec;
+        final double us = cos(snlg) * cosdec;
+        final double ws = sin(sndc);
+        final double sunang = acos((us * xsam + vs * ysam + ws * zsam) / r) / rdpdg;
+
+        // determine zenith angle of satellite
+        final double xvec = xsat - xsam;
+        final double yvec = ysat - ysam;
+        final double zvec = zsat - zsam;
+        final double xfact = sqrt(pow(xvec, 2) + pow(yvec, 2) + pow(zvec, 2));
+        final double satang = acos((xvec * xsam + yvec * ysam + zvec * zsam) / (r * xfact)) / rdpdg;
+
+        // determine relative angle
+        final double x1 = clat * clon;
+        final double y1 = clat * slon;
+        final double z1 = slat;
+        final double x2 = slon;
+        final double y2 = -clon;
+        final double x3 = -(slat * clon);
+        final double y3 = -(slat * slon);
+        final double z3 = clat;
+        final double xc1 = us - x1;
+        final double yc1 = vs - y1;
+        final double zc1 = ws - z1;
+        final double xc2 = xsat / height - x1;
+        final double yc2 = ysat / height - y1;
+        final double zc2 = zsat / height - z1;
+        final double xan1 = xc1 * x3 + yc1 * y3 + zc1 * z3;
+        final double xan2 = xc2 * x3 + yc2 * y3 + zc2 * z3;
+        final double yan1 = xc1 * x2 + yc1 * y2;
+        final double yan2 = xc2 * x2 + yc2 * y2;
+        final double xan3 = xan1 * xan2 + yan1 * yan2;
+        final double yan3 = -(yan1 * xan2) + xan1 * yan2;
+        final double relang = abs(atan2(yan3, xan3) / rdpdg);
+
+        return new double[] { satang, sunang, relang };
+    }
+
+    public double[] satpos(int ntime) {
+        double ra = 0.0;
+        double cp = 0.0;
+        double sa = 0.0;
+        double gracon = 0.0;
+        double diftim = 0.0;
+        double re = 0.0;
+        double xomega = 0.0;
+        double yomega = 0.0;
+        double xmmc = 0.0;
+        double so = 0.0;
+        double sp = 0.0;
+        double epsiln = 0.0;
+        double px = 0.0;
+        double solsid = 0.0;
+        double qx = 0.0;
+        double py = 0.0;
+        double xmanom = 0.0;
+        double qy = 0.0;
+        double pz = 0.0;
+        double xs = 0.0;
+        double qz = 0.0;
+        double ys = 0.0;
+        double zs = 0.0;
+        double a = 0.0;
+        double cra = 0.0;
+        double sha = 0.0;
+        double rdpdg = 0.0;
+        double o = 0.0;
+        double p = 0.0;
+        double sra = 0.0;
+        double ras = 0.0;
+        double ecanm1 = 0.0;
+        double srome2 = 0.0;
+        double ca = 0.0;
+        double ecanom = 0.0;
+        double co = 0.0;
+
+        int irahms= 0;
+        int i= 0;
+        int irayd= 0;
+//        if ((inorb.val != 0)) {
+//            Dummy.go_to("nvxgoes/Satpos",1);
+//        }
+//        inorb.val = 1;
+        if (inorb != 0) {
+//            Dummy.go_to("nvxgoes/Satpos",1);
+        }
+        inorb = 1;
+
+        rdpdg = PI / 180.0;
+        re = 6378.388;
+        gracon = 0.07436574;
+        solsid = 1.00273791;
+        sha = 100.26467;
+        sha = rdpdg * sha;
+        irayd = 74001;
+        irahms = 0;
+        o = rdpdg * orbinc;
+        p = rdpdg * perhel;
+        a = rdpdg * asnode;
+        so = sin(o);
+        co = cos(o);
+        cp = cos(p) * semima;
+        sp = sin(p) * semima;
+        sa = sin(a);
+        ca = cos(a);
+        px = cp * ca - sp * sa * co;
+        py = cp * sa + sp * ca * co;
+        pz = sp * so;
+        qx = -(sp * ca) - cp * sa * co;
+        qy = -(sp * sa) + cp * ca * co;
+        qz = cp * so;
+        srome2 = sqrt(1.0 - oeccen) * sqrt(1.0 + oeccen);
+        xmmc = gracon*re * sqrt(re / semima) / semima;
+//        label1:
+//        Dummy.label("nvxgoes/Satpos",1);
+        diftim = McIDASUtil.timdif(ietimy, ietimh, navday, ntime);
+        xmanom = xmmc * diftim;
+        ecanm1 = xmanom;
+        epsiln = 1.0E-8;
+        {
+            for (i = 1; i <= 20; i++) {
+                ecanom = (xmanom + (oeccen * sin(ecanm1)));
+                if ((abs((ecanom - ecanm1)) < epsiln)) {
+                    break;
+                }
+//                Dummy.label("nvxgoes/Satpos",2);
+                ecanm1 = ecanom;
+            }              //  Close for() loop.
+        }
+//        label3:
+//        Dummy.label("nvxgoes/Satpos",3);
+        xomega = cos(ecanom) - oeccen;
+        yomega = srome2 * sin(ecanom);
+        xs = xomega * px + yomega * qx;
+        ys = xomega * py + yomega * qy;
+        zs = xomega * pz + yomega * qz;
+        diftim = McIDASUtil.timdif(irayd, irahms, navday, ntime);
+        ra = diftim * solsid * PI / 720.0e0 + sha;
+        ras = ra % (2.0 * PI);
+        cra = cos(ras);
+        sra = sin(ras);
+
+        final double x = cra * xs + sra * ys;
+        final double y = -(sra * xs) + cra * ys;
+        final double z = zs;
+
+        return new double[] { x, y, z };
+    }
 }
