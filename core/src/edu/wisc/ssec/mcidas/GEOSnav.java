@@ -26,6 +26,18 @@ MA 02111-1307, USA
 
 package edu.wisc.ssec.mcidas;
 
+import static java.lang.Math.PI;
+import static java.lang.Math.abs;
+import static java.lang.Math.acos;
+import static java.lang.Math.asin;
+import static java.lang.Math.atan;
+import static java.lang.Math.atan2;
+import static java.lang.Math.cos;
+import static java.lang.Math.pow;
+import static java.lang.Math.sin;
+import static java.lang.Math.sqrt;
+import static java.lang.Math.tan;
+
 /*
 This code translated to Java from the original McIDAS module: nvxgeos.dlm.
 The following notice is included in that code:
@@ -221,5 +233,108 @@ public class GEOSnav extends AREAnav {
 
     return latlon;
   }
- 
+  
+  public static final double r = 6371.221;
+  
+  /**
+   * {@inheritDoc}
+   */
+  @Override public boolean canCalculateAngles() {
+    return true;
+  }
+  
+  /**
+   * {@inheritDoc}
+   */
+  @Override public double[] angles (final int jday,
+                                    final int jtime,
+                                    final double xlat,
+                                    final double xlon,
+                                    final double gha,
+                                    final double dec)
+  {
+    double [] xs= new double[(3)];
+    int inorb= 0;
+    
+    final double rdpdg = PI / 180.0;
+    final double xplat = 0.0;
+    final double xplon = plon / 10.0;
+
+    final double snlt = sin(xplat * rdpdg);
+    final double cslt = cos(xplat * rdpdg);
+    final double csln = cos(xplon * rdpdg);
+    final double snln = sin(xplon * rdpdg);
+
+    xs[0] = 42164.36499999999796273186802864074707031 * cslt * csln / 6378.136999999999716237653046846389770508;
+    xs[1] = 42164.36499999999796273186802864074707031 * cslt * snln / 6378.136999999999716237653046846389770508;
+    xs[2] = 42164.36499999999796273186802864074707031 * snlt / 6378.136999999999716237653046846389770508;
+//
+//    if ((iday == jday)) {
+//      Dummy.go_to("nvxgeos/Geosang",1);
+//    }
+//    iday = jday;
+    inorb = 0;
+//    label1:
+//    Dummy.label("nvxgeos/Geosang",1);
+//    pictim = nvxgeos.Ftime.ftime(jtime);
+    final double pictim = McIDASUtil.mcPackedIntegerToDouble(jtime);
+    
+    // determine satellite position
+    final double xsat = xs[0] * 6378.136999999999716237653046846389770508;
+    final double ysat = xs[1] * 6378.136999999999716237653046846389770508;
+    final double zsat = xs[2] * 6378.136999999999716237653046846389770508;
+
+    final double height = sqrt(pow(xsat, 2) + pow(ysat, 2) + pow(zsat, 2));
+    final double ylat = geolat(rdpdg * xlat, 1);
+    final double ylon = rdpdg * xlon;
+    final double slat = sin(ylat);
+    final double clat = cos(ylat);
+    final double slon = sin(ylon);
+    final double clon = cos(ylon);
+    final double xsam = r * clat * clon;
+    final double ysam = r * clat * slon;
+    final double zsam = r * slat;
+
+    // determine zenith angle of sun
+    final double snlg = -(pictim * PI / 12.0) - rdpdg * gha;
+    final double sndc = rdpdg * dec;
+    final double cosdec = cos(sndc);
+    final double us = cos(snlg) * cosdec;
+    final double vs = sin(snlg) * cosdec;
+    final double ws = sin(sndc);
+    final double sunang = acos((us * xsam + vs * ysam + ws * zsam) / r) / rdpdg;
+
+    // determine zenith angle of satellite
+    final double xvec = xsat - xsam;
+    final double yvec = ysat - ysam;
+    final double zvec = zsat - zsam;
+    final double xfact = sqrt((pow(xvec, 2) + pow(yvec, 2) + pow(zvec, 2)));
+    final double satang = acos((xvec * xsam + yvec * ysam + zvec * zsam) / (r * xfact)) / rdpdg;
+
+    // determine relative angle
+    final double x1 = clat * clon;
+    final double y1 = clat * slon;
+    final double z1 = slat;
+    final double x2 = slon;
+    final double y2 = -clon;
+    final double x3 = -(slat * clon);
+    final double y3 = -(slat * slon);
+    final double z3 = clat;
+    final double xc1 = us - x1;
+    final double yc1 = vs - y1;
+    final double zc1 = ws - z1;
+    final double xc2 = xsat / height - x1;
+    final double yc2 = ysat / height - y1;
+    final double zc2 = zsat / height - z1;
+    final double xan1 = xc1 * x3 + yc1 * y3 + zc1 * z3;
+    final double xan2 = xc2 * x3 + yc2 * y3 + zc2 * z3;
+    final double yan1 = xc1 * x2 + yc1 * y2;
+    final double yan2 = xc2 * x2 + yc2 * y2;
+    final double xan3 = xan1 * xan2 + yan1 * yan2;
+    final double yan3 = -(yan1 * xan2) + xan1 * yan2;
+    final double relang = abs(atan2(yan3, xan3) / rdpdg);
+    
+    return new double[] { satang, sunang, relang };
+  }
+  
 }
