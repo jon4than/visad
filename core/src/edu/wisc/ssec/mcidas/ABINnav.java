@@ -49,10 +49,7 @@ public class ABINnav extends AREAnav {
 
     /** Radius of satellite orbit (kilometers). */
     private static final double dh = 42164.16000000000349245965480804443359375;
-
-    /** Convert degrees to radians. */
-    private static final double deg_to_rad = PI / 180.0;
-
+    
     /** Radius of the Earth at the equator (kilometers). */
     private static final double r_eq =
         6378.136999999999716237653046846389770508;
@@ -140,95 +137,53 @@ public class ABINnav extends AREAnav {
      */
     public double[][] toLatLon(double[][] linele) {
         final double sub_lon_radians = plon * (PI / 180.0);
-
-        double xlin;
-        double xele;
-        double lamda_goes;
-        double theta_goes;
-        double lamda_geos;
-        double theta_geos;
-        double cosx;
-        double cosy;
-        double sinx;
-        double siny;
-        double c1;
-        double c2;
-        double sd;
-        double sdd;
-        double sn;
-        double s1;
-        double s2;
-        double s3;
-        double sxy;
-
         int length = linele[indexLine].length;
         double[][] latLons = new double[2][length];
         double[][] imageLineElems = areaCoordToImageCoord(linele);
 
         for (int point = 0; point < length; point++) {
-            double rlin = imageLineElems[indexLine][point];
-            double rele = imageLineElems[indexEle][point];
+            final double rlin = imageLineElems[indexLine][point];
+            final double rele = imageLineElems[indexEle][point];
 
             // start img_to_ll
-            xlin = 0.0;
-            xele = 0.0;
-            lamda_goes = 0.0;
-            theta_goes = 0.0;
-            lamda_geos = 0.0;
-            theta_geos = 0.0;
-            cosx = 0.0;
-            cosy = 0.0;
-            sinx = 0.0;
-            siny = 0.0;
-
-            c1 = 0.0;
-            c2 = 0.0;
-            sd = 0.0;
-            sdd = 0.0;
-            sn = 0.0;
-            s1 = 0.0;
-            s2 = 0.0;
-            s3 = 0.0;
-            sxy = 0.0;
-
-            double xlat;
-            double xlon;
-
+            
             // adjust using Base RESolution
-            xlin = (rlin + bres - 1.0) / bres;
-            xele = (rele + bres - 1.0) / bres;
+            final double xlin = (rlin + bres - 1.0) / bres;
+            final double xele = (rele + bres - 1.0) / bres;
 
             // Intermediate coordinates (coordinates will be radians)
-            theta_goes = xlin * lfac + loff;
-            lamda_goes = xele * cfac + coff;
+            final double theta_goes = xlin * lfac + loff;
+            final double lamda_goes = xele * cfac + coff;
 
             // convert GOES to GEOS
-            theta_geos = asin(sin(theta_goes) * cos(lamda_goes));
-            lamda_geos = atan(tan(lamda_goes) / cos(theta_goes));
+            final double theta_geos = asin(sin(theta_goes) * cos(lamda_goes));
+            final double lamda_geos = atan(tan(lamda_goes) / cos(theta_goes));
 
             // SIN and COS for computations below
-            cosx = cos(lamda_geos);
-            cosy = cos(theta_geos);
-            sinx = sin(lamda_geos);
-            siny = sin(theta_geos);
-
-            c1 = dh * cosx * cosy * dh * cosx * cosy;
-            c2 = (cosy * cosy + FP * siny * siny) * d;
-
-            sdd = c1 - c2;
+            final double cosx = cos(lamda_geos);
+            final double cosy = cos(theta_geos);
+            final double sinx = sin(lamda_geos);
+            final double siny = sin(theta_geos);
+    
+            final double c1 = dh * cosx * cosy * dh * cosx * cosy;
+            final double c2 = (cosy * cosy + FP * siny * siny) * d;
+    
+            final double sdd = c1 - c2;
+            double xlat;
+            double xlon;
             if ((sdd < 0.0))  {
                 xlat = Double.NaN;
                 xlon = Double.NaN;
             } else {
-                sd = sqrt(sdd);
-
-                sn = (dh * cosx * cosy - sd) / (cosy * cosy + FP * siny * siny);
-
-                s1 = dh - sn * cosx * cosy;
-                s2 = sn * sinx * cosy;
-                s3 = -(sn * siny);
-
-                sxy = sqrt(s1 * s1 + (s2 * s2));
+                final double sd = sqrt(sdd);
+    
+                final double sn = (dh * cosx * cosy - sd) / (cosy * cosy + FP * siny * siny);
+    
+                final double s1 = dh - sn * cosx * cosy;
+                final double s2 = sn * sinx * cosy;
+                final double s3 = -(sn * siny);
+    
+                final double sxy = sqrt(s1 * s1 + (s2 * s2));
                 xlon = atan(s2 / s1) + sub_lon_radians;
 
                 xlat = atan(-(FP * s3 / sxy));
@@ -265,70 +220,45 @@ public class ABINnav extends AREAnav {
      *         {@literal "file"} rather than {@literal "image"} coordinates.
      */
     public double[][] toLinEle(double[][] latlon) {
-        final double d_geographic_ssl = plon * deg_to_rad;
-
-        double rlin;
-        double rele;
-        double d_geographic_lat;
-        double d_geocentric_lat;
-        double d_geographic_lon;
-        double r_earth;
-        double r_1;
-        double r_2;
-        double r_3;
-        double lamda;
-        double theta;
-
+        final double d_geographic_ssl = plon * DEGREES_TO_RADIANS;
         int length = latlon[indexLat].length;
         double[][] lineEles = new double[2][length];
 
         for (int point = 0; point < length; point++) {
-            double rlat = latlon[indexLat][point];
+            final double rlat = latlon[indexLat][point];
             double rlon = latlon[indexLon][point];
             if (!isEastPositive) {
                 rlon = -rlon;
             }
 
             // start ll_to_img
-            rlin = 0.0;
-            rele = 0.0;
-            d_geographic_lat = 0.0;
-            d_geocentric_lat = 0.0;
-            d_geographic_lon = 0.0;
-            r_earth = 0.0;
-            r_1 = 0.0;
-            r_2 = 0.0;
-            r_3 = 0.0;
-            lamda = 0.0;
-            theta = 0.0;
-
-            double xlin;
-            double xele;
+            final double xlin;
+            final double xele;
 
             // Earth (Geographic) Coordinates are converted to Radians
-            d_geographic_lat = rlat * deg_to_rad;
-            d_geographic_lon = rlon * deg_to_rad;
+            final double d_geographic_lat = rlat * DEGREES_TO_RADIANS;
+            final double d_geographic_lon = rlon * DEGREES_TO_RADIANS;
+    
+            final double d_geocentric_lat = atan(drpo2 / dreq2 * tan(d_geographic_lat));
 
-            d_geocentric_lat = atan(drpo2 / dreq2 * tan(d_geographic_lat));
-
-            r_earth = drpo / sqrt(1.0 - (dreq2 - drpo2) / dreq2 * cos(d_geocentric_lat) * cos(d_geocentric_lat));
-
-            r_1 = dh - r_earth * cos(d_geocentric_lat) * cos(d_geographic_lon - d_geographic_ssl);
-
-            r_2 = -(r_earth * cos(d_geocentric_lat) * sin(d_geographic_lon - d_geographic_ssl));
-
-            r_3 = r_earth * sin(d_geocentric_lat);
+            final double r_earth = drpo / sqrt(1.0 - (dreq2 - drpo2) / dreq2 * cos(d_geocentric_lat) * cos(d_geocentric_lat));
+    
+            final double r_1 = dh - r_earth * cos(d_geocentric_lat) * cos(d_geographic_lon - d_geographic_ssl);
+    
+            final double r_2 = -(r_earth * cos(d_geocentric_lat) * sin(d_geographic_lon - d_geographic_ssl));
+    
+            final double r_3 = r_earth * sin(d_geocentric_lat);
 
             if ((r_1 > dh))  {
                 xlin = Double.NaN;
                 xele = Double.NaN;
             } else {
-                lamda = asin(-(r_2 / sqrt(r_1 * r_1 + r_2 * r_2 + r_3 * r_3)));
-                theta = atan(r_3 / r_1);
+                final double lamda = asin(-(r_2 / sqrt(r_1 * r_1 + r_2 * r_2 + r_3 * r_3)));
+                final double theta = atan(r_3 / r_1);
 
                 // image line and element
-                rlin = (theta - loff) / lfac;
-                rele = (lamda - coff) / cfac;
+                final double rlin = (theta - loff) / lfac;
+                final double rele = (lamda - coff) / cfac;
 
                 // Adjust using Base RESolution
                 xlin = rlin * bres - (bres - 1.0);
@@ -362,13 +292,12 @@ public class ABINnav extends AREAnav {
                                      final double gha,
                                      final double dec)
     {
-        final double rdpdg = PI / 180.0;
         final double xplat = 0.0;
         final double xplon = plon / 10.0;
-        final double snlt = sin(xplat * rdpdg);
-        final double cslt = cos(xplat * rdpdg);
-        final double csln = cos(xplon * rdpdg);
-        final double snln = sin(xplon * rdpdg);
+        final double snlt = sin(xplat * DEGREES_TO_RADIANS);
+        final double cslt = cos(xplat * DEGREES_TO_RADIANS);
+        final double csln = cos(xplon * DEGREES_TO_RADIANS);
+        final double snln = sin(xplon * DEGREES_TO_RADIANS);
 
 //        xs[0] = 42164.36499999999796273186802864074707031 * cslt * csln / 6378.136999999999716237653046846389770508;
 //        xs[1] = 42164.36499999999796273186802864074707031 * cslt * snln / 6378.136999999999716237653046846389770508;
@@ -401,8 +330,8 @@ public class ABINnav extends AREAnav {
         final double zsat = xs[2] * 6378.136999999999716237653046846389770508;
 
         final double height = sqrt(pow(xsat, 2) + pow(ysat, 2) + pow(zsat, 2));
-        final double ylat = AREAnav.geolat(rdpdg * xlat, 1);
-        final double ylon = rdpdg * xlon;
+        final double ylat = geolat(DEGREES_TO_RADIANS * xlat, 1);
+        final double ylon = DEGREES_TO_RADIANS * xlon;
         final double slat = sin(ylat);
         final double clat = cos(ylat);
         final double slon = sin(ylon);
@@ -412,20 +341,20 @@ public class ABINnav extends AREAnav {
         final double zsam = r * slat;
 
         // determine zenith angle of sun
-        final double snlg = -(pictim * PI / 12.0) - rdpdg * gha;
-        final double sndc = rdpdg * dec;
+        final double snlg = -(pictim * PI / 12.0) - DEGREES_TO_RADIANS * gha;
+        final double sndc = DEGREES_TO_RADIANS * dec;
         final double cosdec = cos(sndc);
         final double us = cos(snlg) * cosdec;
         final double vs = sin(snlg) * cosdec;
         final double ws = sin(sndc);
-        final double sunang = acos((us * xsam + vs * ysam + ws * zsam) / r) / rdpdg;
+        final double sunang = acos((us * xsam + vs * ysam + ws * zsam) / r) / DEGREES_TO_RADIANS;
 
         // determine zenith angle of satellite
         final double xvec = xsat - xsam;
         final double yvec = ysat - ysam;
         final double zvec = zsat - zsam;
         final double xfact = sqrt(pow(xvec, 2) + pow(yvec, 2) + pow(zvec, 2));
-        final double satang = acos((xvec * xsam + yvec * ysam + zvec * zsam) / (r * xfact)) / rdpdg;
+        final double satang = acos((xvec * xsam + yvec * ysam + zvec * zsam) / (r * xfact)) / DEGREES_TO_RADIANS;
 
         // determine relative angle
         final double x1 = clat * clon;
@@ -448,7 +377,7 @@ public class ABINnav extends AREAnav {
         final double yan2 = xc2 * x2 + yc2 * y2;
         final double xan3 = xan1 * xan2 + yan1 * yan2;
         final double yan3 = -(yan1 * xan2) + xan1 * yan2;
-        final double relang = abs(atan2(yan3, xan3) / rdpdg);
+        final double relang = abs(atan2(yan3, xan3) / DEGREES_TO_RADIANS);
 
         return new double[] { satang, sunang, relang };
     }

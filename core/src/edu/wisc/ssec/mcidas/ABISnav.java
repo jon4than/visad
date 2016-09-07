@@ -494,8 +494,6 @@ public class ABISnav extends AREAnav {
   {
     double[] xs = new double[(3)];
 
-    final double rdpdg = PI / 180.0;
-
     int inorb = 0;
 // C
 // C  XS(1) is the length along the x-axis, that is a line from the
@@ -505,8 +503,8 @@ public class ABISnav extends AREAnav {
 // C       otherwise the right-hand rule doesn't work.
 // C  XS(1) is 42164.365 (satellite height above Earth center) * cos 75
 // C  XS(2) is 42164.365*sin 75...It's <0 because the Sat is over the W Hem
-    xs[1] = -(42164.36499999999796273186802864074707031 * sin(75 * rdpdg) / 6378.136999999999716237653046846389770508);
-    xs[0] = 42164.36499999999796273186802864074707031 * cos(75 * rdpdg) / 6378.136999999999716237653046846389770508;
+    xs[1] = -(42164.36499999999796273186802864074707031 * sin(75 * DEGREES_TO_RADIANS) / 6378.136999999999716237653046846389770508);
+    xs[0] = 42164.36499999999796273186802864074707031 * cos(75 * DEGREES_TO_RADIANS) / 6378.136999999999716237653046846389770508;
     xs[2] = (6378.38816f + 42164.0) / 6378.136999999999716237653046846389770508;
     xs[2] = 42164.0 / 6378.136999999999716237653046846389770508;
     xs[2] = 0.0;
@@ -525,8 +523,8 @@ public class ABISnav extends AREAnav {
     final double zsat = xs[2] * 6378.136999999999716237653046846389770508;
 
     final double height = sqrt(pow(xsat, 2) + pow(ysat, 2) + pow(zsat, 2));
-    final double ylat = geolat(rdpdg * xlat, 1);
-    final double ylon = rdpdg * xlon;
+    final double ylat = geolat(DEGREES_TO_RADIANS * xlat, 1);
+    final double ylon = DEGREES_TO_RADIANS * xlon;
     final double slat = sin(ylat);
     final double clat = cos(ylat);
     final double slon = sin(ylon);
@@ -536,20 +534,20 @@ public class ABISnav extends AREAnav {
     final double zsam = r * slat;
 
     // determine zenith angle of sun
-    final double snlg = -(pictim * PI / 12.0) - rdpdg * gha;
-    final double sndc = rdpdg * dec;
+    final double snlg = -(pictim * PI / 12.0) - DEGREES_TO_RADIANS * gha;
+    final double sndc = DEGREES_TO_RADIANS * dec;
     final double cosdec = cos(sndc);
     final double us = cos(snlg) * cosdec;
     final double vs = sin(snlg) * cosdec;
     final double ws = sin(sndc);
-    final double sunang = acos((us * xsam + vs * ysam + ws * zsam) / r) / rdpdg;
+    final double sunang = acos((us * xsam + vs * ysam + ws * zsam) / r) / DEGREES_TO_RADIANS;
 
     // determine zenith angle of satellite
     final double xvec = xsat - xsam;
     final double yvec = ysat - ysam;
     final double zvec = zsat - zsam;
     final double xfact = sqrt(pow(xvec, 2) + pow(yvec, 2) + pow(zvec, 2));
-    final double satang = acos((xvec * xsam + yvec * ysam + zvec * zsam) / (r * xfact)) / rdpdg;
+    final double satang = acos((xvec * xsam + yvec * ysam + zvec * zsam) / (r * xfact)) / DEGREES_TO_RADIANS;
 
     // determine relative angle
     final double x1 = clat * clon;
@@ -572,7 +570,7 @@ public class ABISnav extends AREAnav {
     final double yan2 = xc2 * x2 + yc2 * y2;
     final double xan3 = xan1 * xan2 + yan1 * yan2;
     final double yan3 = -(yan1 * xan2) + xan1 * yan2;
-    final double relang = abs(atan2(yan3, xan3) / rdpdg);
+    final double relang = abs(atan2(yan3, xan3) / DEGREES_TO_RADIANS);
 
     return new double[] { satang, sunang, relang };
   }
