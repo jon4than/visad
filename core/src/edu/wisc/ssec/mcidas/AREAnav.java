@@ -26,8 +26,16 @@ MA 02111-1307, USA
 
 package edu.wisc.ssec.mcidas;
 
-import static java.lang.Math.*;
+
+import static java.lang.Math.PI;
+import static java.lang.Math.cos;
+import static java.lang.Math.pow;
+import static java.lang.Math.sin;
+import static java.lang.Math.sqrt;
 import static java.lang.Math.atan2;
+
+import static edu.wisc.ssec.mcidas.McIDASUtil.mcPackedIntegerToDouble;
+import static edu.wisc.ssec.mcidas.McIDASUtil.timdif;
 
 /**
  * The AREAnav is the superclass for AREA file navigation modules.
@@ -760,15 +768,15 @@ public abstract class AREAnav
      * @return Converted latitude.
      */
     public static double geolat(double xlat, int idir) {
-        double a = 6378.137;
-        double b = 6356.752314;
+        final double a = 6378.137;
+        final double b = 6356.752314;
 
-        double asq = pow(a, 2);
-        double bsq = pow(b, 2);
+        final double asq = pow(a, 2);
+        final double bsq = pow(b, 2);
 
-        double cx = cos(xlat);
-        double sx = sin(xlat);
-        double geolat;
+        final double cx = cos(xlat);
+        final double sx = sin(xlat);
+        final double geolat;
         if (idir == 2) {
             geolat = atan2(asq * sx, bsq * cx);
         } else {
@@ -821,5 +829,84 @@ public abstract class AREAnav
                            final double dec)
     {
         return BAD_ANGLES;
+    }
+    
+    /**
+     * Compute Greenwich Hour Angle and declination of Sun.
+     *
+     * @param jday YYYYddd.
+     * @param jtime HHMMSS.
+     *
+     * @return Array of four {@code double} values: Greenwich hour angle,
+     * declination, latitude of sun position, and longitude of sun position.
+     */
+    public static double[] solarp(int jday, int jtime) {
+        final double rdpdg = PI / 180.0;
+        final double solsid = 1.00273791;
+        final int iepyd = 74004;
+        final int iephms = 0;
+        final double oeccen = 0.016722;
+        final double oincli = rdpdg * mcPackedIntegerToDouble(232700);
+        final double perhel = rdpdg * mcPackedIntegerToDouble(1011311) + PI;
+        final double asnode = rdpdg * mcPackedIntegerToDouble(0);
+        final double xmmc = 0.01720209895 / 1440.0;
+        final double sha = 100.26467;
+        final int irayd = 74001;
+        final int irahms = 0;
+        final double sinc = sin(oincli);
+        final double cinc = cos(oincli);
+        final double sper = sin(perhel);
+        final double cper = cos(perhel);
+        final double sand = sin(asnode);
+        final double cand = cos(asnode);
+        final double px = cper * cand - sper * sand * cinc;
+        final double py = cper * sand + sper * cand * cinc;
+        final double pz = sper * sinc;
+        final double qx = -(sper * cand) - cper * sand * cinc;
+        final double qy = -(sper * sand) + cper * cand * cinc;
+        final double qz = cper * sinc;
+//        label1:
+//        Dummy.label("solarp/Solarp",1);
+        final int iday = jday % 100000;
+        final double ptime = mcPackedIntegerToDouble(jtime);
+        final double diftim = timdif(iepyd, iephms, iday, jtime);
+        final double xmanom = xmmc * diftim;
+        double ecanm1 = xmanom;
+        final double epsiln = 1.0E-8f;
+        double ecanom = 0.0;
+        
+        for (int i = 1; i <= 20; i++) {
+            ecanom = xmanom + oeccen * sin(ecanm1);
+            if ((Math.abs((ecanom-ecanm1)) < epsiln)) {
+                break;
+//                Dummy.go_to("solarp/Solarp",3);
+            }
+//            Dummy.label("solarp/Solarp",2);
+            ecanm1 = ecanom;
+        }              //  Close for() loop.
+        
+//        label3:
+//        Dummy.label("solarp/Solarp",3);
+        double xomega = cos(ecanom) - oeccen;
+        double yomega = sqrt(1.0 - pow(oeccen, 2)) * sin(ecanom);
+        final double xfact = 1.0 / sqrt(pow(xomega, 2) + pow(yomega, 2));
+        xomega = xomega * xfact;
+        yomega = yomega * xfact;
+        final double xs = xomega * px + yomega * qx;
+        final double ys = xomega * py + yomega * qy;
+        final double zs = xomega * pz + yomega * qz;
+        final double slra = atan2(ys, xs) / rdpdg;
+        final double raha = timdif(irayd, irahms, iday, jtime) * solsid / 4.0;
+        
+        double gha = ptime * 15.0;
+        final double xha = 360.0 - sha - raha + slra + gha;
+        gha = xha % 360.0;
+        gha = 360.0 - gha - 2.0;
+        
+        final double dec = atan2(zs, sqrt(pow(xs, 2) + pow(ys, 2))) / rdpdg;
+        final double xlat = geolat(dec * rdpdg, 1) / rdpdg;
+        final double xlon = (-gha - ptime * 15.0 + 720.0) % 360.0;
+//        xlon = xlon % 360.0;
+        return new double[] { gha, dec, xlat, xlon };
     }
 }
