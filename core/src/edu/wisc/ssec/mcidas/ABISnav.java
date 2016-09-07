@@ -145,8 +145,8 @@ public class ABISnav extends AREAnav {
       h = 42164 - re;
       a = 1. / 297.;
       rp = re / (1. + a);
-      cdr = Math.PI / 180.;
-      crd = 180. / Math.PI;
+      cdr = PI / 180.;
+      crd = 180. / PI;
       lpsi2 = 1;
       double angle=17.76;
       nstep = 5535.;
@@ -202,8 +202,8 @@ public class ABISnav extends AREAnav {
       x = xr * lpsi2 * deltax * cdr;
       y = yr * lpsi2 * deltay * cdr;
       rs = re + h;
-      tanx = Math.tan(x);
-      tany = Math.tan(y);
+      tanx = tan(x);
+      tany = tan(y);
       val1 = 1. + tanx * tanx;
       val2 = 1. + (tany * tany) * ((1. + a) * (1. + a));
       yk = rs / re;
@@ -214,16 +214,16 @@ public class ABISnav extends AREAnav {
       }
       vmu = (rs -
              (re *
-              (Math.sqrt((yk * yk) -
+              (sqrt((yk * yk) -
                          (yk * yk - 1) * val1 * val2)))) / (val1 * val2);
-      cosrf = Math.cos(rflon * cdr);
-      sinrf = Math.sin(rflon * cdr);
+      cosrf = cos(rflon * cdr);
+      sinrf = sin(rflon * cdr);
       xt = (rs * cosrf) + (vmu * (tanx * sinrf - cosrf));
       yt = (rs * sinrf) - (vmu * (tanx * cosrf + sinrf));
-      zt = vmu * tany / Math.cos(x);
-      teta = Math.asin(zt / rp);
-      xfi = (Math.atan(((Math.tan(teta)) * re) / rp)) * crd;
-      xla = -Math.atan(yt / xt) * crd;
+      zt = vmu * tany / cos(x);
+      teta = asin(zt / rp);
+      xfi = (atan(((tan(teta)) * re) / rp)) * crd;
+      xla = -atan(yt / xt) * crd;
 //
 //-- CHANGE LONGITUDE FOR CORRECT SUBPOINT
 //
@@ -279,10 +279,10 @@ public class ABISnav extends AREAnav {
       xfi = x1 * cdr;
       xla = y1 * cdr;
       rom = (re * rp) /
-            Math.sqrt(rp * rp * Math.cos(xfi) * Math.cos(xfi) +
-                      re * re * Math.sin(xfi) * Math.sin(xfi));
-      y = Math.sqrt(h * h + rom * rom -
-                    2 * h * rom * Math.cos(xfi) * Math.cos(xla));
+            sqrt(rp * rp * cos(xfi) * cos(xfi) +
+                      re * re * sin(xfi) * sin(xfi));
+      y = sqrt(h * h + rom * rom -
+                    2 * h * rom * cos(xfi) * cos(xla));
       r1 = y * y + rom * rom;
       r2 = h * h;
       if (r1 > r2) {
@@ -293,18 +293,18 @@ public class ABISnav extends AREAnav {
       rs = re + h;
       reph = re;
       rpph = rp;
-      coslo = Math.cos(rflon * cdr);
-      sinlo = Math.sin(rflon * cdr);
-      teta = Math.atan((rpph / reph) * Math.tan(xfi));
-      xt = reph * Math.cos(teta) * Math.cos(xla);
-      yt = reph * Math.cos(teta) * Math.sin(xla);
-      zt = rpph * Math.sin(teta);
-      px = Math.atan((coslo * (yt - rs * sinlo) -
+      coslo = cos(rflon * cdr);
+      sinlo = sin(rflon * cdr);
+      teta = atan((rpph / reph) * tan(xfi));
+      xt = reph * cos(teta) * cos(xla);
+      yt = reph * cos(teta) * sin(xla);
+      zt = rpph * sin(teta);
+      px = atan((coslo * (yt - rs * sinlo) -
                       (xt - rs * coslo) * sinlo) / (sinlo *
                       (yt - rs * sinlo) + (xt - rs * coslo) * coslo));
-      py = Math.atan(zt *
-                     ((Math.tan(px) * sinlo - coslo) / (xt - rs * coslo)) *
-                     Math.cos(px));
+      py = atan(zt *
+                     ((tan(px) * sinlo - coslo) / (xt - rs * coslo)) *
+                     cos(px));
       px = px * crd;
       py = py * crd;
       xr = px / (deltax * lpsi2);
@@ -355,8 +355,8 @@ public class ABISnav extends AREAnav {
       x = xr * lpsi2 * deltax * cdr;
       y = yr * lpsi2 * deltay * cdr;
       rs = re + h;
-      tanx = Math.tan(x);
-      tany = Math.tan(y);
+      tanx = tan(x);
+      tany = tan(y);
       val1 = 1. + tanx * tanx;
       val2 = 1. + (tany * tany) * ((1. + a) * (1. + a));
       yk = rs / re;
@@ -367,16 +367,16 @@ public class ABISnav extends AREAnav {
       }
       vmu = (rs -
              (re *
-              (Math.sqrt((yk * yk) -
+              (sqrt((yk * yk) -
                          (yk * yk - 1) * val1 * val2)))) / (val1 * val2);
-      cosrf = Math.cos(rflon * cdr);
-      sinrf = Math.sin(rflon * cdr);
+      cosrf = cos(rflon * cdr);
+      sinrf = sin(rflon * cdr);
       xt = (rs * cosrf) + (vmu * (tanx * sinrf - cosrf));
       yt = (rs * sinrf) - (vmu * (tanx * cosrf + sinrf));
-      zt = vmu * tany / Math.cos(x);
-      teta = Math.asin(zt / rp);
-      xfi = (Math.atan(((Math.tan(teta)) * re) / rp)) * crd;
-      xla = -Math.atan(yt / xt) * crd;
+      zt = vmu * tany / cos(x);
+      teta = asin(zt / rp);
+      xfi = (atan(((tan(teta)) * re) / rp)) * crd;
+      xla = -atan(yt / xt) * crd;
 //
 //-- CHANGE LONGITUDE FOR CORRECT SUBPOINT
 //
@@ -432,10 +432,9 @@ public class ABISnav extends AREAnav {
       xfi = x1 * cdr;
       xla = y1 * cdr;
       rom = (re * rp) /
-            Math.sqrt(rp * rp * Math.cos(xfi) * Math.cos(xfi) +
-                      re * re * Math.sin(xfi) * Math.sin(xfi));
-      y = Math.sqrt(h * h + rom * rom -
-                    2 * h * rom * Math.cos(xfi) * Math.cos(xla));
+            sqrt(rp * rp * cos(xfi) * cos(xfi) +
+                      re * re * sin(xfi) * sin(xfi));
+      y = sqrt(h * h + rom * rom - 2 * h * rom * cos(xfi) * cos(xla));
       r1 = y * y + rom * rom;
       r2 = h * h;
       if (r1 > r2) {
@@ -446,18 +445,17 @@ public class ABISnav extends AREAnav {
       rs = re + h;
       reph = re;
       rpph = rp;
-      coslo = Math.cos(rflon * cdr);
-      sinlo = Math.sin(rflon * cdr);
-      teta = Math.atan((rpph / reph) * Math.tan(xfi));
-      xt = reph * Math.cos(teta) * Math.cos(xla);
-      yt = reph * Math.cos(teta) * Math.sin(xla);
-      zt = rpph * Math.sin(teta);
-      px = Math.atan((coslo * (yt - rs * sinlo) -
+      coslo = cos(rflon * cdr);
+      sinlo = sin(rflon * cdr);
+      teta = atan((rpph / reph) * tan(xfi));
+      xt = reph * cos(teta) * cos(xla);
+      yt = reph * cos(teta) * sin(xla);
+      zt = rpph * sin(teta);
+      px = atan((coslo * (yt - rs * sinlo) -
                       (xt - rs * coslo) * sinlo) / (sinlo *
                       (yt - rs * sinlo) + (xt - rs * coslo) * coslo));
-      py = Math.atan(zt *
-                     ((Math.tan(px) * sinlo - coslo) / (xt - rs * coslo)) *
-                     Math.cos(px));
+      py = atan(zt *
+                     ((tan(px) * sinlo - coslo) / (xt - rs * coslo)) * cos(px));
       px = px * crd;
       py = py * crd;
       xr = px / (deltax * lpsi2);
